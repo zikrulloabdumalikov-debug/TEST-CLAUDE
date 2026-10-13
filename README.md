@@ -1,6 +1,6 @@
 # O'yinlar
 
-## 1024 — `index.html`
+## 1024 — `1024.html`
 
 2048 uslubidagi o'yin. Maqsad — 4×4 maydonda plitkalarni birlashtirib **1024** ga yetkazish.
 
@@ -9,7 +9,7 @@
 - Har yurishdan keyin 2 yoki 4 qiymatli yangi plitka tushadi.
 - Harakat qilib bo'lmasa o'yin tugaydi.
 
-## 15 — `puzzle15.html`
+## 15 — `index.html` (asosiy sahifa)
 
 Sirg'anchiq 15 o'yini. Raqamli plitkalarni bo'sh joy atrofida siljitib, 1 dan 15 gacha tartibga keltiring.
 

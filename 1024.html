@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1024 o'yini</title>
+  <style>
+    :root {
+      --bg: #faf8ef;
+      --board: #bbada0;
+      --cell: #cdc1b4;
+      --text: #776e65;
+      --accent: #8f7a66;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #1e1e1e;
+        --board: #444;
+        --cell: #5a5a5a;
+        --text: #eee;
+        --accent: #888;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #1e1e1e;
+      --board: #444;
+      --cell: #5a5a5a;
+      --text: #eee;
+      --accent: #888;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      user-select: none;
+    }
+    header {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    h1 { font-size: 48px; margin: 0; }
+    .scores { display: flex; gap: 8px; }
+    .score-box {
+      background: var(--board);
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 12px;
+      text-align: center;
+      min-width: 72px;
+    }
+    .score-box small { display: block; font-size: 11px; opacity: .8; }
+    .score-box span { font-size: 20px; font-weight: bold; }
+    .controls { margin: 12px 0; display: flex; gap: 8px; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.1); }
+    p.hint { margin: 4px 0 12px; font-size: 14px; opacity: .8; text-align: center; }
+    .board-wrap { position: relative; width: 100%; max-width: 420px; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      background: var(--board);
+      border-radius: 10px;
+      padding: 10px;
+      aspect-ratio: 1;
+      touch-action: none;
+    }
+    .cell {
+      background: var(--cell);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(18px, 6vw, 36px);
+      font-weight: bold;
+      color: #776e65;
+      transition: transform .1s;
+    }
+    .tile-new { animation: pop .2s; }
+    @keyframes pop { from { transform: scale(.5); } to { transform: scale(1); } }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(238, 228, 218, .75);
+      border-radius: 10px;
+      color: #776e65;
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .overlay.show { display: flex; }
+    .overlay button { font-size: 16px; }
+    .theme-toggle { font-size: 13px; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>1024</h1>
+    <div class="scores">
+      <div class="score-box"><small>Ball</small><span id="score">0</span></div>
+      <div class="score-box"><small>Eng yaxshi</small><span id="best">0</span></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button id="new-game">Yangi o'yin</button>
+    <button id="theme" class="theme-toggle">Mavzu</button>
+  </div>
+  <p class="hint">Strelkalar yoki WASD bilan suring. Telefonda esa barmoq bilan suring. Maqsad: 1024 plitkasini hosil qiling!</p>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+    <div class="overlay" id="overlay">
+      <div id="overlay-text"></div>
+      <div style="display:flex; gap:8px;">
+        <button id="keep-going">Davom etish</button>
+        <button id="restart">Qayta boshlash</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const SIZE = 4;
+      const TARGET = 1024;
+      const BEST_KEY = "game1024-best";
+
+      const COLORS = {
+        2: ["#eee4da", "#776e65"],
+        4: ["#ede0c8", "#776e65"],
+        8: ["#f2b179", "#f9f6f2"],
+        16: ["#f59563", "#f9f6f2"],
+        32: ["#f67c5f", "#f9f6f2"],
+        64: ["#f65e3b", "#f9f6f2"],
+        128: ["#edcf72", "#f9f6f2"],
+        256: ["#edcc61", "#f9f6f2"],
+        512: ["#edc850", "#f9f6f2"],
+        1024: ["#edc53f", "#f9f6f2"],
+        2048: ["#edc22e", "#f9f6f2"],
+      };
+
+      const boardEl = document.getElementById("board");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const overlay = document.getElementById("overlay");
+      const overlayText = document.getElementById("overlay-text");
+
+      let grid, score, best, won, keepPlaying, animating;
+
+      function loadBest() {
+        try { return Number(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; }
+      }
+      function saveBest(value) {
+        try { localStorage.setItem(BEST_KEY, String(value)); } catch { /* storage unavailable */ }
+      }
+
+      function emptyGrid() {
+        return Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+      }
+
+      function addRandomTile() {
+        const empty = [];
+        for (let r = 0; r < SIZE; r++)
+          for (let c = 0; c < SIZE; c++)
+            if (grid[r][c] === 0) empty.push([r, c]);
+        if (!empty.length) return null;
+        const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+        grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+        return [r, c];
+      }
+
+      function newGame() {
+        grid = emptyGrid();
+        score = 0;
+        won = false;
+        keepPlaying = false;
+        overlay.classList.remove("show");
+        addRandomTile();
+        addRandomTile();
+        render();
+      }
+
+      // Slide one row to the left, merging equal neighbours once per move.
+      function slideRow(row) {
+        const values = row.filter(v => v !== 0);
+        const out = [];
+        let gained = 0;
+        for (let i = 0; i < values.length; i++) {
+          if (values[i] === values[i + 1]) {
+            const merged = values[i] * 2;
+            out.push(merged);
+            gained += merged;
+            i++;
+          } else {
+            out.push(values[i]);
+          }
+        }
+        while (out.length < SIZE) out.push(0);
+        return { row: out, gained };
+      }
+
+      function move(direction) {
+        if (animating) return;
+        if (won && !keepPlaying) return;
+
+        const before = JSON.stringify(grid);
+        let gainedTotal = 0;
+
+        for (let i = 0; i < SIZE; i++) {
+          // Read the line starting from the edge the tiles slide toward.
+          const line = [];
+          for (let j = 0; j < SIZE; j++) {
+            const [r, c] = lineCoords(direction, i, j);
+            line.push(grid[r][c]);
+          }
+          const { row, gained } = slideRow(line);
+          gainedTotal += gained;
+          for (let j = 0; j < SIZE; j++) {
+            const [r, c] = lineCoords(direction, i, j);
+            grid[r][c] = row[j];
+          }
+        }
+
+        if (before === JSON.stringify(grid)) return;
+
+        score += gainedTotal;
+        if (score > best) {
+          best = score;
+          saveBest(best);
+        }
+        addRandomTile();
+        render(true);
+
+        if (!won && grid.flat().some(v => v >= TARGET)) {
+          won = true;
+          overlayText.textContent = "Tabriklaymiz! 1024 yutdingiz!";
+          overlay.classList.add("show");
+        } else if (!canMove()) {
+          overlayText.textContent = "O'yin tugadi";
+          overlay.classList.add("show");
+        }
+      }
+
+      // Maps (line index i, position j) to a grid cell for each direction.
+      function lineCoords(direction, i, j) {
+        switch (direction) {
+          case "left":  return [i, j];
+          case "right": return [i, SIZE - 1 - j];
+          case "up":    return [j, i];
+          case "down":  return [SIZE - 1 - j, i];
+        }
+      }
+
+      function canMove() {
+        for (let r = 0; r < SIZE; r++)
+          for (let c = 0; c < SIZE; c++) {
+            const v = grid[r][c];
+            if (v === 0) return true;
+            if (c + 1 < SIZE && grid[r][c + 1] === v) return true;
+            if (r + 1 < SIZE && grid[r + 1][c] === v) return true;
+          }
+        return false;
+      }
+
+      function render(animateNew = false) {
+        scoreEl.textContent = score;
+        bestEl.textContent = best;
+        boardEl.innerHTML = "";
+        for (let r = 0; r < SIZE; r++) {
+          for (let c = 0; c < SIZE; c++) {
+            const v = grid[r][c];
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            if (v) {
+              const [bg, fg] = COLORS[v] || ["#3c3a32", "#f9f6f2"];
+              cell.style.background = bg;
+              cell.style.color = fg;
+              cell.textContent = v;
+              if (v >= 1000) cell.style.fontSize = "clamp(14px, 4.5vw, 28px)";
+            }
+            boardEl.appendChild(cell);
+          }
+        }
+      }
+
+      // Keyboard controls
+      const KEYS = {
+        ArrowLeft: "left", a: "left", A: "left",
+        ArrowRight: "right", d: "right", D: "right",
+        ArrowUp: "up", w: "up", W: "up",
+        ArrowDown: "down", s: "down", S: "down",
+      };
+      document.addEventListener("keydown", e => {
+        const dir = KEYS[e.key];
+        if (dir) {
+          e.preventDefault();
+          move(dir);
+        }
+      });
+
+      // Touch / swipe controls
+      let touchStart = null;
+      boardEl.addEventListener("touchstart", e => {
+        const t = e.touches[0];
+        touchStart = [t.clientX, t.clientY];
+      }, { passive: true });
+      boardEl.addEventListener("touchend", e => {
+        if (!touchStart) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStart[0];
+        const dy = t.clientY - touchStart[1];
+        touchStart = null;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+        if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "right" : "left");
+        else move(dy > 0 ? "down" : "up");
+      });
+
+      document.getElementById("new-game").addEventListener("click", newGame);
+      document.getElementById("restart").addEventListener("click", newGame);
+      document.getElementById("keep-going").addEventListener("click", () => {
+        keepPlaying = true;
+        overlay.classList.remove("show");
+      });
+
+      document.getElementById("theme").addEventListener("click", () => {
+        const root = document.documentElement;
+        const dark = root.dataset.theme === "dark" ||
+          (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+        root.dataset.theme = dark ? "light" : "dark";
+      });
+
+      best = loadBest();
+      newGame();
+    })();
+  </script>
+</body>
+</html>
