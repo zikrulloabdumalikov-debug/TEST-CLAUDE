@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4 ta ketma-ket</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #board { display: grid; grid-template-columns: repeat(7, 46px); gap: 6px; background: #1e4fa3; padding: 8px; border-radius: 10px; margin: 12px 0; }
+  .slot { width: 46px; height: 46px; border-radius: 50%; background: #15171c; border: 0; cursor: pointer; padding: 0; }
+  .slot.r { background: #f56565; }
+  .slot.y { background: #ecc94b; }
+  #status { font-size: 18px; min-height: 28px; }
+  button.reset { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>4 ta ketma-ket</h1>
+<p>Ikki o'yinchi navbat bilan ustunga disk tashlaydi. Qizil — 1-o'yinchi, sariq — 2-o'yinchi.</p>
+<div id="board"></div>
+<p id="status"></p>
+<button class="reset" id="reset">Yangi o'yin</button>
+<script>
+  const ROWS = 6, COLS = 7;
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  let grid, turn, over;
+
+  function newGame() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(""));
+    turn = "r"; over = false;
+    render();
+    statusEl.textContent = "Qizil navbatda.";
+  }
+
+  function drop(c) {
+    if (over) return;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (!grid[r][c]) {
+        grid[r][c] = turn;
+        if (wins(r, c, turn)) {
+          over = true;
+          statusEl.textContent = turn === "r" ? "Qizil yutdi!" : "Sariq yutdi!";
+        } else if (grid.every(row => row.every(v => v))) {
+          over = true;
+          statusEl.textContent = "Durang.";
+        } else {
+          turn = turn === "r" ? "y" : "r";
+          statusEl.textContent = turn === "r" ? "Qizil navbatda." : "Sariq navbatda.";
+        }
+        render();
+        return;
+      }
+    }
+  }
+
+  function wins(r, c, p) {
+    const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    for (const [dr, dc] of dirs) {
+      let count = 1;
+      for (const s of [1, -1]) {
+        let rr = r + dr * s, cc = c + dc * s;
+        while (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS && grid[rr][cc] === p) {
+          count++;
+          rr += dr * s;
+          cc += dc * s;
+        }
+      }
+      if (count >= 4) return true;
+    }
+    return false;
+  }
+
+  function render() {
+    boardEl.innerHTML = "";
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement("button");
+        cell.className = "slot " + grid[r][c];
+        cell.addEventListener("click", () => { drop(c); });
+        boardEl.appendChild(cell);
+      }
+  }
+
+  document.getElementById("reset").addEventListener("click", newGame);
+  newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ping-pong</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  canvas { background: #000; border-radius: 8px; max-width: 100%; touch-action: none; }
+  p { margin: 8px 0; text-align: center; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Ping-pong</h1>
+<p>Siz chapda. Sichqoncha yoki barmoq bilan harakatlantiring, yoki W / S tugmalari. Hisob: <span id="score">0 : 0</span></p>
+<canvas id="c" width="480" height="320"></canvas>
+<script>
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  const PAD_H = 60, PAD_W = 10, BALL = 7, AI_SPEED = 3.2;
+  let you, ai, ball, scoreYou, scoreAi, keys = {};
+
+  function resetBall(dir) {
+    ball = { x: cv.width / 2, y: cv.height / 2, vx: 4 * dir, vy: (Math.random() * 2 - 1) * 3 };
+  }
+
+  function resetAll() {
+    you = { y: cv.height / 2 - PAD_H / 2 };
+    ai = { y: cv.height / 2 - PAD_H / 2 };
+    scoreYou = 0; scoreAi = 0;
+    updateScore();
+    resetBall(1);
+  }
+
+  function updateScore() {
+    document.getElementById("score").textContent = `${scoreYou} : ${scoreAi}`;
+  }
+
+  function update() {
+    if (keys.w) you.y -= 5;
+    if (keys.s) you.y += 5;
+    you.y = Math.max(0, Math.min(cv.height - PAD_H, you.y));
+
+    // Computer follows the ball with a limited speed, so it can be beaten.
+    const target = ball.y - PAD_H / 2;
+    if (ai.y < target) ai.y += Math.min(AI_SPEED, target - ai.y);
+    else ai.y -= Math.min(AI_SPEED, ai.y - target);
+    ai.y = Math.max(0, Math.min(cv.height - PAD_H, ai.y));
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    if (ball.y - BALL < 0 || ball.y + BALL > cv.height) ball.vy = -ball.vy;
+
+    // Left paddle (you)
+    if (ball.vx < 0 && ball.x - BALL <= 20 + PAD_W && ball.x > 20 &&
+        ball.y >= you.y && ball.y <= you.y + PAD_H) {
+      ball.vx = -ball.vx * 1.05;
+      ball.vy += (ball.y - (you.y + PAD_H / 2)) * 0.1;
+    }
+    // Right paddle (computer)
+    const aiX = cv.width - 20 - PAD_W;
+    if (ball.vx > 0 && ball.x + BALL >= aiX && ball.x < cv.width - 20 &&
+        ball.y >= ai.y && ball.y <= ai.y + PAD_H) {
+      ball.vx = -ball.vx * 1.05;
+      ball.vy += (ball.y - (ai.y + PAD_H / 2)) * 0.1;
+    }
+
+    if (ball.x < 0) { scoreAi++; updateScore(); resetBall(1); }
+    if (ball.x > cv.width) { scoreYou++; updateScore(); resetBall(-1); }
+  }
+
+  function draw() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#333";
+    for (let y = 0; y < cv.height; y += 20) ctx.fillRect(cv.width / 2 - 1, y, 2, 10);
+    ctx.fillStyle = "#4fd1c5";
+    ctx.fillRect(20, you.y, PAD_W, PAD_H);
+    ctx.fillStyle = "#f56565";
+    ctx.fillRect(cv.width - 20 - PAD_W, ai.y, PAD_W, PAD_H);
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, BALL, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function loop() { update(); draw(); requestAnimationFrame(loop); }
+
+  document.addEventListener("keydown", e => { if (e.key === "w" || e.key === "s") keys[e.key] = true; });
+  document.addEventListener("keyup", e => { if (e.key === "w" || e.key === "s") keys[e.key] = false; });
+  function moveTo(clientY) {
+    const r = cv.getBoundingClientRect();
+    you.y = (clientY - r.top) * (cv.height / r.height) - PAD_H / 2;
+  }
+  cv.addEventListener("pointermove", e => moveTo(e.clientY));
+  cv.addEventListener("pointerdown", e => moveTo(e.clientY));
+
+  resetAll();
+  loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tez urish</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #stats { font-size: 18px; margin: 8px 0; }
+  #holes { display: grid; grid-template-columns: repeat(3, 90px); gap: 12px; margin: 12px 0; }
+  .hole { width: 90px; height: 90px; border-radius: 50%; background: #3b2f25; border: 0; font-size: 48px; cursor: pointer; padding: 0; }
+  .hole.up { background: #8b5a2b; }
+  button.reset { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Tez urish</h1>
+<p id="stats">Ochko: 0 · Vaqt: 30</p>
+<div id="holes"></div>
+<button class="reset" id="start">Boshlash</button>
+<script>
+  const holesEl = document.getElementById("holes");
+  const statsEl = document.getElementById("stats");
+  const holes = [];
+  let score, timeLeft, moleTimer, clock;
+
+  for (let i = 0; i < 9; i++) {
+    const btn = document.createElement("button");
+    btn.className = "hole";
+    btn.textContent = "";
+    btn.addEventListener("click", () => whack(i));
+    holesEl.appendChild(btn);
+    holes.push(btn);
+  }
+
+  function show() {
+    statsEl.textContent = `Ochko: ${score} · Vaqt: ${timeLeft}`;
+  }
+
+  function whack(i) {
+    if (!clock) return;
+    if (holes[i].classList.contains("up")) {
+      score++;
+      holes[i].classList.remove("up");
+      holes[i].textContent = "";
+      show();
+    }
+  }
+
+  function popMole() {
+    holes.forEach(h => { h.classList.remove("up"); h.textContent = ""; });
+    const i = Math.floor(Math.random() * holes.length);
+    holes[i].classList.add("up");
+    holes[i].textContent = "🐹";
+  }
+
+  function start() {
+    score = 0; timeLeft = 30;
+    show();
+    clearInterval(clock);
+    clearInterval(moleTimer);
+    moleTimer = setInterval(popMole, 700);
+    popMole();
+    clock = setInterval(() => {
+      timeLeft--;
+      show();
+      if (timeLeft <= 0) {
+        clearInterval(clock);
+        clock = null;
+        clearInterval(moleTimer);
+        holes.forEach(h => { h.classList.remove("up"); h.textContent = ""; });
+        statsEl.textContent = `Vaqt tugadi! Ochko: ${score}`;
+      }
+    }, 1000);
+  }
+
+  document.getElementById("start").addEventListener("click", start);
+</script>
+</body>
+</html>

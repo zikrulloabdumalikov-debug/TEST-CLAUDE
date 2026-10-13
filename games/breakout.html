@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G'isht buzish</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  canvas { background: #000; border-radius: 8px; max-width: 100%; touch-action: none; }
+  p { margin: 8px 0; text-align: center; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>G'isht buzish</h1>
+<p>Sichqoncha yoki barmoq bilan paddleni suring. Ochko: <span id="score">0</span></p>
+<canvas id="c" width="320" height="400"></canvas>
+<script>
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  const ROWS = 5, COLS = 8, BW = 36, BH = 16, GAP = 4, TOP = 40;
+  const PAD_W = 70, PAD_H = 10, R = 6;
+  const COLORS = ["#f56565", "#ed8936", "#ecc94b", "#48bb78", "#4299e1"];
+  let bricks, paddle, ball, score, state;
+
+  function reset() {
+    bricks = [];
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        bricks.push({ x: 8 + c * (BW + GAP), y: TOP + r * (BH + GAP), color: COLORS[r], alive: true });
+    paddle = { x: cv.width / 2 - PAD_W / 2 };
+    ball = { x: cv.width / 2, y: cv.height - 60, vx: 3, vy: -3.5 };
+    score = 0;
+    state = "ready";
+    document.getElementById("score").textContent = score;
+  }
+
+  function update() {
+    if (state !== "playing") return;
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+    if (ball.x - R < 0 || ball.x + R > cv.width) ball.vx = -ball.vx;
+    if (ball.y - R < 0) ball.vy = -ball.vy;
+
+    // Paddle bounce: the angle depends on where the ball hits the paddle.
+    const py = cv.height - 30;
+    if (ball.vy > 0 && ball.y + R >= py && ball.y + R <= py + PAD_H + 6 &&
+        ball.x >= paddle.x && ball.x <= paddle.x + PAD_W) {
+      const offset = (ball.x - (paddle.x + PAD_W / 2)) / (PAD_W / 2);
+      ball.vx = offset * 4;
+      ball.vy = -Math.abs(ball.vy);
+    }
+
+    for (const b of bricks) {
+      if (!b.alive) continue;
+      if (ball.x + R > b.x && ball.x - R < b.x + BW && ball.y + R > b.y && ball.y - R < b.y + BH) {
+        b.alive = false;
+        ball.vy = -ball.vy;
+        score += 10;
+        document.getElementById("score").textContent = score;
+        break;
+      }
+    }
+
+    if (ball.y - R > cv.height) state = "over";
+    if (bricks.every(b => !b.alive)) state = "won";
+  }
+
+  function draw() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    for (const b of bricks) {
+      if (!b.alive) continue;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, b.y, BW, BH);
+    }
+    ctx.fillStyle = "#eee";
+    ctx.fillRect(paddle.x, cv.height - 30, PAD_W, PAD_H);
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, R, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (state !== "playing") {
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.font = "bold 18px system-ui";
+      const msg = state === "ready" ? "Boshlash uchun bosing"
+        : state === "won" ? "Tabriklaymiz! Hammasi buzildi" : "Yutqazdingiz. Qayta: bosing";
+      ctx.fillText(msg, cv.width / 2, cv.height / 2);
+    }
+  }
+
+  function loop() { update(); draw(); requestAnimationFrame(loop); }
+
+  function movePaddle(clientX) {
+    const r = cv.getBoundingClientRect();
+    const x = (clientX - r.left) * (cv.width / r.width);
+    paddle.x = Math.max(0, Math.min(cv.width - PAD_W, x - PAD_W / 2));
+  }
+  cv.addEventListener("pointermove", e => movePaddle(e.clientX));
+  cv.addEventListener("pointerdown", e => {
+    movePaddle(e.clientX);
+    if (state !== "playing") { if (state !== "ready") reset(); state = "playing"; }
+  });
+
+  reset();
+  loop();
+</script>
+</body>
+</html>

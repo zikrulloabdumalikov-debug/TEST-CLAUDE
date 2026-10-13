@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonni top</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #hint { font-size: 22px; min-height: 32px; margin: 12px 0; }
+  .row { display: flex; gap: 8px; }
+  input { font-size: 20px; padding: 8px; width: 120px; border-radius: 6px; border: 1px solid #3b4252; background: #262a33; color: #eee; text-align: center; }
+  button { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 14px; font-size: 15px; cursor: pointer; }
+  #tries { margin-top: 10px; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Sonni top</h1>
+<p>Kompyuter 1 dan 100 gacha son o'yladi. Uni toping.</p>
+<div id="hint"></div>
+<div class="row">
+  <input id="guess" type="number" min="1" max="100" inputmode="numeric" placeholder="1–100">
+  <button id="check">Tekshirish</button>
+</div>
+<p id="tries"></p>
+<button id="reset">Yangi o'yin</button>
+<script>
+  const hintEl = document.getElementById("hint");
+  const guessEl = document.getElementById("guess");
+  const triesEl = document.getElementById("tries");
+  let secret, tries, over;
+
+  function newGame() {
+    secret = 1 + Math.floor(Math.random() * 100);
+    tries = 0; over = false;
+    hintEl.textContent = "Taxminingizni yozing";
+    triesEl.textContent = "";
+    guessEl.value = "";
+    guessEl.disabled = false;
+    guessEl.focus();
+  }
+
+  function check() {
+    if (over) return;
+    const n = Number(guessEl.value);
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      hintEl.textContent = "1 dan 100 gacha son kiriting";
+      return;
+    }
+    tries++;
+    if (n === secret) {
+      over = true;
+      hintEl.textContent = `Topdingiz! Son: ${secret}`;
+      guessEl.disabled = true;
+    } else {
+      hintEl.textContent = n < secret ? "Katta ↑" : "Kichik ↓";
+    }
+    triesEl.textContent = `Urinishlar: ${tries}`;
+    guessEl.value = "";
+    guessEl.focus();
+  }
+
+  document.getElementById("check").addEventListener("click", check);
+  guessEl.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+  document.getElementById("reset").addEventListener("click", newGame);
+  newGame();
+</script>
+</body>
+</html>

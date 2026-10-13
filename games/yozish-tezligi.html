@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yozish tezligi</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #text { font-size: 20px; line-height: 1.6; max-width: 560px; background: #1e2129; padding: 16px; border-radius: 8px; }
+  .ok { color: #68d391; }
+  .bad { color: #fc8181; text-decoration: underline; }
+  .cur { background: #4fd1c5; color: #111; border-radius: 3px; }
+  #input { width: 100%; max-width: 560px; font-size: 18px; padding: 10px; margin-top: 12px; border-radius: 6px; border: 1px solid #3b4252; background: #262a33; color: #eee; box-sizing: border-box; }
+  #stats { font-size: 18px; min-height: 28px; }
+  button.reset { margin-top: 12px; background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Yozish tezligi</h1>
+<p>Matnni ko'chiring. Yozishni boshlaganda vaqt hisoblanadi.</p>
+<div id="text"></div>
+<input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Bu yerga yozing...">
+<p id="stats"></p>
+<button class="reset" id="reset">Yangi matn</button>
+<script>
+  const TEXTS = [
+    "Kitob o'qish aqlni charxlaydi va yangi fikrlar uchun yo'l ochadi.",
+    "Bugun ob-havo ochiq, quyosh chiqqan va shamol deyarli yo'q.",
+    "Dasturlashni o'rganish sabr va doimiy mashqni talab qiladi.",
+    "Har kuni biroz vaqt ajratib, o'z ustingizda ishlang va natijaga erishing."
+  ];
+  const textEl = document.getElementById("text");
+  const inputEl = document.getElementById("input");
+  const statsEl = document.getElementById("stats");
+  let target, startedAt, done;
+
+  function newText() {
+    target = TEXTS[Math.floor(Math.random() * TEXTS.length)];
+    inputEl.value = "";
+    inputEl.disabled = false;
+    startedAt = null;
+    done = false;
+    statsEl.textContent = "";
+    render("");
+    inputEl.focus();
+  }
+
+  function render(typed) {
+    textEl.innerHTML = "";
+    [...target].forEach((ch, i) => {
+      const span = document.createElement("span");
+      span.textContent = ch;
+      if (i < typed.length) span.className = typed[i] === ch ? "ok" : "bad";
+      else if (i === typed.length) span.className = "cur";
+      textEl.appendChild(span);
+    });
+  }
+
+  inputEl.addEventListener("input", () => {
+    if (done) return;
+    if (startedAt === null) startedAt = Date.now();
+    const typed = inputEl.value;
+    render(typed);
+    if (typed.length >= target.length) {
+      done = true;
+      inputEl.disabled = true;
+      const minutes = (Date.now() - startedAt) / 60000;
+      const words = target.split(" ").length;
+      const correct = [...typed].filter((c, i) => c === target[i]).length;
+      const accuracy = Math.round((correct / target.length) * 100);
+      statsEl.textContent = `Tezlik: ${Math.round(words / minutes)} so'z/daqiqa · Aniqlik: ${accuracy}%`;
+    }
+  });
+
+  document.getElementById("reset").addEventListener("click", newText);
+  newText();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reaksiya testi</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #area { width: 100%; max-width: 420px; height: 260px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; cursor: pointer; user-select: none; background: #b83232; color: #fff; text-align: center; padding: 16px; box-sizing: border-box; }
+  #area.wait { background: #b83232; }
+  #area.go { background: #2f855a; }
+  #area.idle { background: #3b4252; }
+  p { text-align: center; }
+  #best { font-size: 18px; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Reaksiya testi</h1>
+<div id="area" class="idle">Boshlash uchun bosing</div>
+<p id="best"></p>
+<p>Ekran yashil bo'lganda tez bosing. Qizil paytda bosmang!</p>
+<script>
+  const area = document.getElementById("area");
+  const bestEl = document.getElementById("best");
+  let state = "idle", timer, startedAt, best = null;
+
+  area.addEventListener("click", () => {
+    if (state === "idle") {
+      state = "wait";
+      area.className = "wait";
+      area.textContent = "Yashil bo'lishini kuting…";
+      timer = setTimeout(() => {
+        state = "go";
+        area.className = "go";
+        area.textContent = "Bosing!";
+        startedAt = performance.now();
+      }, 1500 + Math.random() * 3500);
+    } else if (state === "wait") {
+      // Clicked too early.
+      clearTimeout(timer);
+      state = "idle";
+      area.className = "idle";
+      area.textContent = "Erta bosdingiz. Qayta boshlash uchun bosing.";
+    } else if (state === "go") {
+      const ms = Math.round(performance.now() - startedAt);
+      if (best === null || ms < best) best = ms;
+      bestEl.textContent = `Natija: ${ms} ms · Eng yaxshi: ${best} ms`;
+      state = "idle";
+      area.className = "idle";
+      area.textContent = "Yana urinish uchun bosing";
+    }
+  });
+</script>
+</body>
+</html>

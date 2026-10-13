@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flappy</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  canvas { background: #87ceeb; border-radius: 8px; max-width: 100%; touch-action: manipulation; }
+  p { margin: 8px 0; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Flappy</h1>
+<p>Bo'shliq, Enter yoki ekranni bosing — qush uchadi. Ochko: <span id="score">0</span></p>
+<canvas id="c" width="320" height="480"></canvas>
+<script>
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  const GAP = 130, PIPE_W = 52, SPEED = 2.2, FLAP = -6.5, GRAVITY = 0.35;
+  let bird, pipes, score, state, frame;
+
+  function reset() {
+    bird = { x: 80, y: cv.height / 2, v: 0, r: 13 };
+    pipes = [];
+    score = 0;
+    state = "ready";
+    frame = 0;
+    document.getElementById("score").textContent = score;
+  }
+
+  function flap() {
+    if (state === "over") { reset(); return; }
+    if (state === "ready") state = "playing";
+    bird.v = FLAP;
+  }
+
+  function update() {
+    if (state !== "playing") return;
+    frame++;
+    bird.v += GRAVITY;
+    bird.y += bird.v;
+    if (frame % 90 === 0) {
+      const top = 60 + Math.random() * (cv.height - GAP - 120);
+      pipes.push({ x: cv.width, top, passed: false });
+    }
+    pipes.forEach(p => { p.x -= SPEED; });
+    pipes = pipes.filter(p => p.x + PIPE_W > 0);
+    for (const p of pipes) {
+      if (!p.passed && p.x + PIPE_W < bird.x) {
+        p.passed = true;
+        score++;
+        document.getElementById("score").textContent = score;
+      }
+      const hitX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
+      const hitY = bird.y - bird.r < p.top || bird.y + bird.r > p.top + GAP;
+      if (hitX && hitY) state = "over";
+    }
+    if (bird.y + bird.r > cv.height || bird.y - bird.r < 0) state = "over";
+  }
+
+  function draw() {
+    ctx.fillStyle = "#87ceeb";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#4caf50";
+    for (const p of pipes) {
+      ctx.fillRect(p.x, 0, PIPE_W, p.top);
+      ctx.fillRect(p.x, p.top + GAP, PIPE_W, cv.height - p.top - GAP);
+    }
+    ctx.fillStyle = "#ffd54f";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#222";
+    ctx.textAlign = "center";
+    ctx.font = "bold 18px system-ui";
+    if (state === "ready") ctx.fillText("Boshlash uchun bosing", cv.width / 2, cv.height / 2 + 80);
+    if (state === "over") ctx.fillText("Yutqazdingiz. Qayta: bosing", cv.width / 2, cv.height / 2);
+  }
+
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  document.addEventListener("keydown", e => { if (e.code === "Space" || e.key === "Enter") { e.preventDefault(); flap(); } });
+  cv.addEventListener("pointerdown", flap);
+
+  reset();
+  loop();
+</script>
+</body>
+</html>

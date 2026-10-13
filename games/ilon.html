@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ilon</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  canvas { background: #000; border-radius: 8px; max-width: 100%; }
+  .pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; margin-top: 12px; }
+  .pad button { height: 56px; font-size: 22px; background: #262a33; color: #eee; border: 0; border-radius: 8px; cursor: pointer; }
+  .pad .empty { visibility: hidden; }
+  p { margin: 8px 0; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Ilon</h1>
+<p>Ochko: <span id="score">0</span></p>
+<canvas id="c" width="320" height="320"></canvas>
+<div class="pad">
+  <span class="empty"></span><button data-d="up">↑</button><span class="empty"></span>
+  <button data-d="left">←</button><button data-d="down">↓</button><button data-d="right">→</button>
+</div>
+<p>Klaviatura: strelkalar yoki W A S D. Boshlash uchun yo'nalishni tanlang.</p>
+<script>
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  const N = 16, CELL = cv.width / N;
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  const KEYS = { ArrowUp: "up", w: "up", W: "up", ArrowDown: "down", s: "down", S: "down", ArrowLeft: "left", a: "left", A: "left", ArrowRight: "right", d: "right", D: "right" };
+  let snake, dir, nextDir, food, score, timer;
+
+  function reset() {
+    snake = [[8, 8], [7, 8], [6, 8]];
+    dir = DIRS.right; nextDir = dir;
+    score = 0;
+    placeFood();
+    document.getElementById("score").textContent = score;
+    clearInterval(timer);
+    timer = setInterval(tick, 130);
+    draw();
+  }
+
+  function placeFood() {
+    do {
+      food = [Math.floor(Math.random() * N), Math.floor(Math.random() * N)];
+    } while (snake.some(([x, y]) => x === food[0] && y === food[1]));
+  }
+
+  function tick() {
+    dir = nextDir;
+    const head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+    const hitWall = head[0] < 0 || head[1] < 0 || head[0] >= N || head[1] >= N;
+    const hitSelf = snake.some(([x, y]) => x === head[0] && y === head[1]);
+    if (hitWall || hitSelf) {
+      clearInterval(timer);
+      draw("O'yin tugadi. Qayta boshlash uchun yo'nalishni tanlang.");
+      snake = null;
+      return;
+    }
+    snake.unshift(head);
+    if (head[0] === food[0] && head[1] === food[1]) {
+      score++;
+      document.getElementById("score").textContent = score;
+      placeFood();
+    } else {
+      snake.pop();
+    }
+    draw();
+  }
+
+  function draw(message) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    if (food) {
+      ctx.fillStyle = "#f56565";
+      ctx.fillRect(food[0] * CELL + 2, food[1] * CELL + 2, CELL - 4, CELL - 4);
+    }
+    if (snake) {
+      ctx.fillStyle = "#4fd1c5";
+      snake.forEach(([x, y]) => ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2));
+    }
+    if (message) {
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(message, cv.width / 2, cv.height / 2);
+    }
+  }
+
+  function setDir(name) {
+    const d = DIRS[name];
+    // Ignore a reverse direction; the snake cannot turn back into itself.
+    if (dir[0] + d[0] === 0 && dir[1] + d[1] === 0) return;
+    if (!snake) reset();
+    nextDir = d;
+  }
+
+  document.addEventListener("keydown", e => {
+    const name = KEYS[e.key];
+    if (name) { e.preventDefault(); setDir(name); }
+  });
+  document.querySelectorAll(".pad button").forEach(btn =>
+    btn.addEventListener("click", () => setDir(btn.dataset.d)));
+
+  snake = null; food = null; dir = DIRS.right; nextDir = dir;
+  draw("Boshlash uchun yo'nalishni tanlang");
+</script>
+</body>
+</html>

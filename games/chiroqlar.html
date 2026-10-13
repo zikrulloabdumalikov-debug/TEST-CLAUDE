@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chiroqlar</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #grid { display: grid; grid-template-columns: repeat(5, 56px); gap: 6px; margin: 16px 0; }
+  .cell { width: 56px; height: 56px; border: 0; border-radius: 8px; background: #3b4252; cursor: pointer; padding: 0; }
+  .cell.on { background: #ecc94b; box-shadow: 0 0 10px #ecc94b; }
+  p { text-align: center; }
+  button.reset { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Chiroqlar</h1>
+<p>Maqsad: hamma chiroqlarni o'chirish. Har bosish o'zini va qo'shni katakchalarni almashtiradi.</p>
+<div id="grid"></div>
+<p>Yurishlar: <span id="moves">0</span></p>
+<p id="msg"></p>
+<button class="reset" id="reset">Yangi o'yin</button>
+<script>
+  const N = 5;
+  const gridEl = document.getElementById("grid");
+  let lights, moves;
+
+  function toggle(state, r, c) {
+    const offsets = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (const [dr, dc] of offsets) {
+      const rr = r + dr, cc = c + dc;
+      if (rr >= 0 && rr < N && cc >= 0 && cc < N) state[rr * N + cc] = !state[rr * N + cc];
+    }
+  }
+
+  function newGame() {
+    // Start from the solved state and apply random presses, so the puzzle is always solvable.
+    lights = Array(N * N).fill(false);
+    for (let k = 0; k < 12; k++) toggle(lights, Math.floor(Math.random() * N), Math.floor(Math.random() * N));
+    moves = 0;
+    document.getElementById("msg").textContent = "";
+    render();
+  }
+
+  function press(r, c) {
+    if (lights.every(v => !v)) return;
+    toggle(lights, r, c);
+    moves++;
+    render();
+  }
+
+  function render() {
+    document.getElementById("moves").textContent = moves;
+    gridEl.innerHTML = "";
+    lights.forEach((on, i) => {
+      const btn = document.createElement("button");
+      btn.className = "cell" + (on ? " on" : "");
+      btn.addEventListener("click", () => press(Math.floor(i / N), i % N));
+      gridEl.appendChild(btn);
+    });
+    if (lights.every(v => !v)) document.getElementById("msg").textContent = `Tabriklaymiz! ${moves} yurishda yechdingiz.`;
+  }
+
+  document.getElementById("reset").addEventListener("click", newGame);
+  newGame();
+</script>
+</body>
+</html>

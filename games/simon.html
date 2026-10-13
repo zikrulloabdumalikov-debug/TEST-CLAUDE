@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simon</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #pad { display: grid; grid-template-columns: repeat(2, 130px); gap: 12px; margin: 16px 0; }
+  .pad { height: 130px; border: 0; border-radius: 14px; cursor: pointer; opacity: .45; }
+  .pad.lit { opacity: 1; }
+  .pad:disabled { cursor: default; }
+  #status { font-size: 18px; min-height: 28px; }
+  button.reset { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Simon</h1>
+<p id="status">Boshlash tugmasini bosing.</p>
+<div id="pad">
+  <button class="pad" data-i="0" style="background:#48bb78"></button>
+  <button class="pad" data-i="1" style="background:#f56565"></button>
+  <button class="pad" data-i="2" style="background:#4299e1"></button>
+  <button class="pad" data-i="3" style="background:#ecc94b"></button>
+</div>
+<button class="reset" id="start">Boshlash</button>
+<script>
+  const pads = [...document.querySelectorAll(".pad")];
+  const statusEl = document.getElementById("status");
+  let seq, input, playing, busy;
+
+  function flash(i) {
+    return new Promise(resolve => {
+      pads[i].classList.add("lit");
+      setTimeout(() => { pads[i].classList.remove("lit"); setTimeout(resolve, 150); }, 400);
+    });
+  }
+
+  async function playSequence() {
+    busy = true;
+    statusEl.textContent = `Daraja: ${seq.length}. Kuzating…`;
+    for (const i of seq) await flash(i);
+    busy = false;
+    input = [];
+    statusEl.textContent = "Endi siz takrorlang.";
+  }
+
+  function next() {
+    seq.push(Math.floor(Math.random() * 4));
+    playSequence();
+  }
+
+  pads.forEach((p, i) => p.addEventListener("click", async () => {
+    if (!playing || busy) return;
+    input.push(i);
+    flash(i);
+    const k = input.length - 1;
+    if (input[k] !== seq[k]) {
+      playing = false;
+      statusEl.textContent = `Xato! Siz ${seq.length - 1} darajaga yetdingiz.`;
+      return;
+    }
+    if (input.length === seq.length) {
+      busy = true;
+      statusEl.textContent = "To'g'ri!";
+      setTimeout(next, 800);
+    }
+  }));
+
+  document.getElementById("start").addEventListener("click", () => {
+    seq = []; input = []; playing = true; busy = false;
+    next();
+  });
+</script>
+</body>
+</html>

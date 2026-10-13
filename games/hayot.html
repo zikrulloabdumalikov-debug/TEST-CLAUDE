@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hayot o'yini</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  canvas { background: #000; border-radius: 8px; max-width: 100%; cursor: pointer; }
+  .controls { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; justify-content: center; }
+  button { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 14px; font-size: 15px; cursor: pointer; }
+  p { text-align: center; margin: 6px 0; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Hayot o'yini</h1>
+<p>Katakchani bosib tirik/o'lik qiling. Boshlang, keyin qoidalar bo'yicha avlodlar almashadi.</p>
+<canvas id="c" width="400" height="400"></canvas>
+<div class="controls">
+  <button id="play">Boshlash</button>
+  <button id="step">Bir qadam</button>
+  <button id="clear">Tozalash</button>
+  <button id="random">Tasodifiy</button>
+</div>
+<p>Avlod: <span id="gen">0</span></p>
+<script>
+  const N = 40, CELL = 10;
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  let grid, gen, timer;
+
+  function empty() { return Array.from({ length: N }, () => Array(N).fill(0)); }
+
+  function neighbours(g, r, c) {
+    let n = 0;
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const rr = (r + dr + N) % N, cc = (c + dc + N) % N;
+        n += g[rr][cc];
+      }
+    return n;
+  }
+
+  function stepGen() {
+    const next = empty();
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) {
+        const n = neighbours(grid, r, c);
+        next[r][c] = grid[r][c] ? (n === 2 || n === 3 ? 1 : 0) : (n === 3 ? 1 : 0);
+      }
+    grid = next;
+    gen++;
+    document.getElementById("gen").textContent = gen;
+    draw();
+  }
+
+  function draw() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#68d391";
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++)
+        if (grid[r][c]) ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+  }
+
+  function setPlaying(on) {
+    clearInterval(timer);
+    timer = on ? setInterval(stepGen, 150) : null;
+    document.getElementById("play").textContent = on ? "To'xtatish" : "Boshlash";
+  }
+
+  cv.addEventListener("click", e => {
+    const r = cv.getBoundingClientRect();
+    const c = Math.floor((e.clientX - r.left) * (cv.width / r.width) / CELL);
+    const row = Math.floor((e.clientY - r.top) * (cv.height / r.height) / CELL);
+    grid[row][c] ^= 1;
+    draw();
+  });
+  document.getElementById("play").addEventListener("click", () => setPlaying(!timer));
+  document.getElementById("step").addEventListener("click", stepGen);
+  document.getElementById("clear").addEventListener("click", () => {
+    setPlaying(false); grid = empty(); gen = 0;
+    document.getElementById("gen").textContent = gen; draw();
+  });
+  document.getElementById("random").addEventListener("click", () => {
+    grid = grid.map(row => row.map(() => (Math.random() < 0.3 ? 1 : 0)));
+    gen = 0; document.getElementById("gen").textContent = gen; draw();
+  });
+
+  grid = empty(); gen = 0;
+  draw();
+</script>
+</body>
+</html>

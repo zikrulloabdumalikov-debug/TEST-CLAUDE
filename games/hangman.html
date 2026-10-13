@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Osilgan so'z</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #word { font-size: 32px; letter-spacing: 8px; font-family: monospace; margin: 16px 0; }
+  #letters { display: grid; grid-template-columns: repeat(7, 40px); gap: 6px; }
+  #letters button { height: 40px; background: #262a33; color: #eee; border: 0; border-radius: 6px; font-size: 16px; cursor: pointer; }
+  #letters button:disabled { opacity: .3; cursor: default; }
+  button.reset { margin-top: 16px; background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+  #msg { min-height: 26px; font-size: 18px; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>Osilgan so'z</h1>
+<p>Noto'g'ri urinishlar: <span id="wrong">0</span> / 6</p>
+<div id="word"></div>
+<div id="letters"></div>
+<p id="msg"></p>
+<button class="reset" id="reset">Yangi so'z</button>
+<script>
+  const WORDS = ["KITOB", "OLMA", "DARYO", "QUYOSH", "BOG", "TOG", "MAKTAB", "QALAM", "UYQU", "TELEFON", "OSMON", "CHOYXONA", "DUNYO", "ILDIZ"];
+  // Latin alphabet used by the Uzbek Latin script, plus common apostrophe letters are kept as plain letters.
+  const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const MAX = 6;
+  let word, guessed, wrong;
+
+  function newGame() {
+    word = WORDS[Math.floor(Math.random() * WORDS.length)];
+    guessed = new Set();
+    wrong = 0;
+    render();
+  }
+
+  function guess(ch) {
+    if (guessed.has(ch) || wrong >= MAX || won()) return;
+    guessed.add(ch);
+    if (!word.includes(ch)) wrong++;
+    render();
+  }
+
+  function won() {
+    return [...word].every(c => guessed.has(c));
+  }
+
+  function render() {
+    document.getElementById("word").textContent =
+      [...word].map(c => (guessed.has(c) ? c : "_")).join(" ");
+    document.getElementById("wrong").textContent = wrong;
+    const lettersEl = document.getElementById("letters");
+    lettersEl.innerHTML = "";
+    for (const ch of ALPHA) {
+      const btn = document.createElement("button");
+      btn.textContent = ch;
+      btn.disabled = guessed.has(ch) || wrong >= MAX || won();
+      btn.addEventListener("click", () => guess(ch));
+      lettersEl.appendChild(btn);
+    }
+    const msg = document.getElementById("msg");
+    if (won()) msg.textContent = "Tabriklaymiz! So'z topildi.";
+    else if (wrong >= MAX) msg.textContent = `Yutqazdingiz. So'z: ${word}`;
+    else msg.textContent = "";
+  }
+
+  document.addEventListener("keydown", e => {
+    const ch = e.key.toUpperCase();
+    if (ALPHA.includes(ch)) guess(ch);
+  });
+  document.getElementById("reset").addEventListener("click", newGame);
+  newGame();
+</script>
+</body>
+</html>

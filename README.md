@@ -1,22 +1,32 @@
 # O'yinlar
 
-## 1024 — `1024.html`
+20 ta kichik brauzer o'yini. Bosh sahifa (`index.html`) ularning hammasini ro'yxat qilib ko'rsatadi.
 
-2048 uslubidagi o'yin. Maqsad — 4×4 maydonda plitkalarni birlashtirib **1024** ga yetkazish.
+GitHub Pages'da: https://zikrulloabdumalikov-debug.github.io/TEST-CLAUDE/
 
-- **Boshqaruv:** strelkalar yoki `W` `A` `S` `D`; telefonda barmoq bilan suring.
-- Bir xil plitkalar birlashadi va qiymati ikki barobar bo'ladi.
-- Har yurishdan keyin 2 yoki 4 qiymatli yangi plitka tushadi.
-- Harakat qilib bo'lmasa o'yin tugaydi.
+## O'yinlar ro'yxati
 
-## 15 — `index.html` (asosiy sahifa)
+| Fayl | O'yin |
+|---|---|
+| `games/15.html` | 15 o'yini |
+| `games/1024.html` | 1024 |
+| `games/xo.html` | XO (kompyuterga qarshi) |
+| `games/ilon.html` | Ilon |
+| `games/xotira.html` | Xotira |
+| `games/mina.html` | Mina topish |
+| `games/flappy.html` | Flappy |
+| `games/ping-pong.html` | Ping-pong |
+| `games/breakout.html` | G'isht buzish |
+| `games/hangman.html` | Osilgan so'z |
+| `games/qaychi.html` | Qaychi-qog'oz-tosh |
+| `games/tez-urish.html` | Tez urish |
+| `games/simon.html` | Simon |
+| `games/4-ketma-ket.html` | 4 ta ketma-ket |
+| `games/reaksiya.html` | Reaksiya testi |
+| `games/chiroqlar.html` | Chiroqlar |
+| `games/yozish-tezligi.html` | Yozish tezligi |
+| `games/tetris.html` | Tetris |
+| `games/hayot.html` | Hayot (Conway) |
+| `games/sonni-top.html` | Sonni top |
 
-Sirg'anchiq 15 o'yini. Raqamli plitkalarni bo'sh joy atrofida siljitib, 1 dan 15 gacha tartibga keltiring.
-
-- **Boshqaruv:** plitkani bosing yoki suring; strelkalar yoki `W` `A` `S` `D` bilan ham bo'ladi.
-- Yurishlar va vaqt hisoblanadi.
-- Aralashtirish har doim yechiladigan holatni beradi.
-
-## Ishga tushirish
-
-Fayllarni brauzerda oching. Hech qanday o'rnatish yoki server kerak emas.
+Har bir o'yin bitta HTML fayl, hech qanday o'rnatish yoki server kerak emas.

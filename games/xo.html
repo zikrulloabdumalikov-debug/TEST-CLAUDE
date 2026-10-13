@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XO</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #15171c; color: #eee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; box-sizing: border-box; }
+  a { color: #4fd1c5; align-self: flex-start; }
+  #board { display: grid; grid-template-columns: repeat(3, 90px); gap: 8px; margin: 16px 0; }
+  .cell { width: 90px; height: 90px; background: #262a33; border: 0; border-radius: 8px; font-size: 44px; font-weight: bold; color: #fff; cursor: pointer; }
+  .cell:disabled { cursor: default; }
+  button.reset { background: #4fd1c5; color: #111; border: 0; border-radius: 6px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+  #status { font-size: 20px; min-height: 28px; }
+</style>
+</head>
+<body>
+<a href="../index.html">← Menyu</a>
+<h1>XO</h1>
+<p>Siz <b>X</b>, kompyuter <b>O</b>.</p>
+<div id="board"></div>
+<p id="status"></p>
+<button class="reset" id="reset">Qayta boshlash</button>
+<script>
+  const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  let b, over;
+
+  function winner(board) {
+    for (const [a, c, d] of LINES)
+      if (board[a] && board[a] === board[c] && board[a] === board[d]) return board[a];
+    return board.includes("") ? null : "draw";
+  }
+
+  // Minimax: the computer never loses if it can help it.
+  function minimax(board, player) {
+    const w = winner(board);
+    if (w === "O") return 10;
+    if (w === "X") return -10;
+    if (w === "draw") return 0;
+    let best = player === "O" ? -Infinity : Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (board[i]) continue;
+      board[i] = player;
+      const score = minimax(board, player === "O" ? "X" : "O");
+      board[i] = "";
+      best = player === "O" ? Math.max(best, score) : Math.min(best, score);
+    }
+    return best;
+  }
+
+  function aiMove() {
+    let best = -Infinity, move = -1;
+    for (let i = 0; i < 9; i++) {
+      if (b[i]) continue;
+      b[i] = "O";
+      const score = minimax(b, "X");
+      b[i] = "";
+      if (score > best) { best = score; move = i; }
+    }
+    return move;
+  }
+
+  function render() {
+    boardEl.innerHTML = "";
+    b.forEach((v, i) => {
+      const btn = document.createElement("button");
+      btn.className = "cell";
+      btn.textContent = v;
+      btn.disabled = over || v !== "";
+      btn.addEventListener("click", () => play(i));
+      boardEl.appendChild(btn);
+    });
+  }
+
+  function finish() {
+    const w = winner(b);
+    if (w === "X") statusEl.textContent = "Siz yutdingiz!";
+    else if (w === "O") statusEl.textContent = "Kompyuter yutdi.";
+    else if (w === "draw") statusEl.textContent = "Durang.";
+    over = w !== null;
+  }
+
+  function play(i) {
+    if (over || b[i]) return;
+    b[i] = "X";
+    if (winner(b) === null) {
+      b[aiMove()] = "O";
+    }
+    render();
+    finish();
+  }
+
+  document.getElementById("reset").addEventListener("click", () => {
+    b = Array(9).fill("");
+    over = false;
+    statusEl.textContent = "Navbat sizda.";
+    render();
+  });
+
+  document.getElementById("reset").click();
+</script>
+</body>
+</html>
