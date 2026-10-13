@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>15 o'yini</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --board: #8b7d6b;
+      --tile: #d9cfbf;
+      --tile-text: #3d3428;
+      --text: #3d3428;
+      --accent: #8b7d6b;
+      --win: #7fb069;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #1e1e1e;
+        --board: #555;
+        --tile: #3a3a3a;
+        --tile-text: #eee;
+        --text: #eee;
+        --accent: #666;
+        --win: #5a8f4a;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #1e1e1e;
+      --board: #555;
+      --tile: #3a3a3a;
+      --tile-text: #eee;
+      --text: #eee;
+      --accent: #666;
+      --win: #5a8f4a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      user-select: none;
+    }
+    h1 { font-size: 40px; margin: 8px 0 4px; }
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin: 8px 0 12px;
+      font-size: 18px;
+    }
+    .stats div span { font-weight: bold; }
+    .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.1); }
+    p.hint { margin: 0 0 12px; font-size: 14px; opacity: .8; text-align: center; max-width: 420px; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background: var(--board);
+      border-radius: 10px;
+      padding: 8px;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1;
+      touch-action: none;
+    }
+    .tile {
+      background: var(--tile);
+      color: var(--tile-text);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(22px, 7vw, 40px);
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform .12s ease;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+    }
+    .tile.empty { background: transparent; box-shadow: none; cursor: default; }
+    .tile:not(.empty):hover { filter: brightness(1.05); }
+    .board.won .tile:not(.empty) { background: var(--win); color: #fff; }
+    .message { min-height: 26px; margin-top: 12px; font-size: 18px; font-weight: bold; color: var(--win); }
+  </style>
+</head>
+<body>
+  <h1>15 o'yini</h1>
+  <div class="stats">
+    <div>Yurish: <span id="moves">0</span></div>
+    <div>Vaqt: <span id="time">0:00</span></div>
+  </div>
+  <div class="controls">
+    <button id="new-game">Yangi o'yin</button>
+    <button id="theme">Mavzu</button>
+  </div>
+  <p class="hint">Raqamli plitkalarni bo'sh joy atrofida siljitib, 1 dan 15 gacha tartibga keltiring. Plitkani bosing yoki suring.</p>
+
+  <div class="board" id="board"></div>
+  <div class="message" id="message"></div>
+
+  <script>
+    (() => {
+      const SIZE = 4;
+      const EMPTY = 0;
+
+      const boardEl = document.getElementById("board");
+      const movesEl = document.getElementById("moves");
+      const timeEl = document.getElementById("time");
+      const messageEl = document.getElementById("message");
+
+      let tiles, moves, startTime, timerId, won;
+
+      const solved = () => {
+        const arr = [];
+        for (let i = 1; i < SIZE * SIZE; i++) arr.push(i);
+        arr.push(EMPTY);
+        return arr;
+      };
+
+      // Shuffle by applying random legal moves to the solved state,
+      // so every generated puzzle is guaranteed solvable.
+      function shuffle() {
+        let arr = solved();
+        let blank = arr.length - 1;
+        let prev = -1;
+        for (let k = 0; k < 400; k++) {
+          const r = Math.floor(blank / SIZE), c = blank % SIZE;
+          const options = [];
+          if (r > 0) options.push(blank - SIZE);
+          if (r < SIZE - 1) options.push(blank + SIZE);
+          if (c > 0) options.push(blank - 1);
+          if (c < SIZE - 1) options.push(blank + 1);
+          const filtered = options.filter(o => o !== prev);
+          const next = filtered[Math.floor(Math.random() * filtered.length)];
+          [arr[blank], arr[next]] = [arr[next], arr[blank]];
+          prev = blank;
+          blank = next;
+        }
+        // Avoid starting already solved.
+        return arr.every((v, i) => v === solved()[i]) ? shuffle() : arr;
+      }
+
+      function isSolved() {
+        return tiles.every((v, i) => v === solved()[i]);
+      }
+
+      function stopTimer() {
+        clearInterval(timerId);
+        timerId = null;
+      }
+
+      function startTimer() {
+        if (timerId) return;
+        startTime = Date.now();
+        timerId = setInterval(updateTime, 500);
+      }
+
+      function updateTime() {
+        const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        const m = Math.floor(elapsed / 60);
+        const s = String(elapsed % 60).padStart(2, "0");
+        timeEl.textContent = `${m}:${s}`;
+      }
+
+      function newGame() {
+        stopTimer();
+        tiles = shuffle();
+        moves = 0;
+        won = false;
+        startTime = null;
+        movesEl.textContent = "0";
+        timeEl.textContent = "0:00";
+        messageEl.textContent = "";
+        boardEl.classList.remove("won");
+        render();
+      }
+
+      function tryMove(index) {
+        if (won) return;
+        const blank = tiles.indexOf(EMPTY);
+        const r1 = Math.floor(index / SIZE), c1 = index % SIZE;
+        const r2 = Math.floor(blank / SIZE), c2 = blank % SIZE;
+        // Only tiles in the same row or column as the blank can slide.
+        if (Math.abs(r1 - r2) + Math.abs(c1 - c2) !== 1) return;
+
+        startTimer();
+        [tiles[index], tiles[blank]] = [tiles[blank], tiles[index]];
+        moves++;
+        movesEl.textContent = moves;
+        render();
+
+        if (isSolved()) {
+          won = true;
+          stopTimer();
+          updateTime();
+          boardEl.classList.add("won");
+          messageEl.textContent = `Tabriklaymiz! ${moves} yurish, ${timeEl.textContent}`;
+        }
+      }
+
+      // Slide the blank in a direction by moving the tile next to it into the gap.
+      function slideBlank(direction) {
+        if (won) return;
+        const blank = tiles.indexOf(EMPTY);
+        const r = Math.floor(blank / SIZE), c = blank % SIZE;
+        let from = null;
+        if (direction === "up" && r < SIZE - 1) from = blank + SIZE;
+        if (direction === "down" && r > 0) from = blank - SIZE;
+        if (direction === "left" && c < SIZE - 1) from = blank + 1;
+        if (direction === "right" && c > 0) from = blank - 1;
+        if (from !== null) tryMove(from);
+      }
+
+      function render() {
+        boardEl.innerHTML = "";
+        tiles.forEach((v, i) => {
+          const cell = document.createElement("div");
+          cell.className = "tile" + (v === EMPTY ? " empty" : "");
+          if (v !== EMPTY) {
+            cell.textContent = v;
+            cell.addEventListener("click", () => tryMove(i));
+          }
+          boardEl.appendChild(cell);
+        });
+      }
+
+      // Keyboard: arrow keys move the tile that is adjacent to the blank in that direction.
+      document.addEventListener("keydown", e => {
+        const map = {
+          ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+          w: "up", s: "down", a: "left", d: "right",
+        };
+        const dir = map[e.key];
+        if (dir) {
+          e.preventDefault();
+          slideBlank(dir);
+        }
+      });
+
+      // Swipe: swiping moves the tile on the board in the swipe direction if it's next to the blank.
+      let touchStart = null;
+      boardEl.addEventListener("touchstart", e => {
+        const t = e.touches[0];
+        touchStart = [t.clientX, t.clientY, e.target.closest(".tile")];
+      }, { passive: true });
+      boardEl.addEventListener("touchend", e => {
+        if (!touchStart) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStart[0];
+        const dy = t.clientY - touchStart[1];
+        const tile = touchStart[2];
+        touchStart = null;
+        if (!tile || Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+        const index = [...boardEl.children].indexOf(tile);
+        if (index < 0) return;
+        const blank = tiles.indexOf(EMPTY);
+        // Only move if the swipe direction points toward the blank.
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if ((dx > 0 && blank === index + 1) || (dx < 0 && blank === index - 1)) tryMove(index);
+        } else {
+          if ((dy > 0 && blank === index + SIZE) || (dy < 0 && blank === index - SIZE)) tryMove(index);
+        }
+      });
+
+      document.getElementById("new-game").addEventListener("click", newGame);
+      document.getElementById("theme").addEventListener("click", () => {
+        const root = document.documentElement;
+        const dark = root.dataset.theme === "dark" ||
+          (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+        root.dataset.theme = dark ? "light" : "dark";
+      });
+
+      newGame();
+    })();
+  </script>
+</body>
+</html>
